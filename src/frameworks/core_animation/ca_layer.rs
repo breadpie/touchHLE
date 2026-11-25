@@ -671,15 +671,18 @@ fn transform_for_conversion(env: &mut Environment, this: id, other: id) -> CGAff
 
         if this_superlayer == nil && other_superlayer == nil {
             if need_common_ancestor {
-                panic!("Layers {this:?} and {other:?} have no common ancestor!");
+                // Happens on real devices too, e.g. when a game asks for a
+                // touch location in a view that was removed from the window.
+                // Treat both root layers as sharing the same coordinate space.
+                log_dbg!("Layers {this:?} and {other:?} have no common ancestor!");
+                break (nil, this_transform, other_transform);
             } else {
                 break (nil, this_transform, other_transform);
             }
         }
     };
 
-    assert!((common_ancestor == nil) != need_common_ancestor);
-    if need_common_ancestor {
+    if need_common_ancestor && common_ancestor != nil {
         log_dbg!("{this:?} and {other:?}'s common ancestor: {common_ancestor:?}",);
     }
     log_dbg!("{this:?}'s transform in {common_ancestor:?}: {this_transform:?}");

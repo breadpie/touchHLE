@@ -286,6 +286,14 @@ pub const CLASSES: ClassExports = objc_classes! {
 // TODO: types other than booleans and long longs
 
 // NSCoding implementation
+// Real iOS caches common NSNumbers, which hides over-releases in some games
+// (e.g. Tank Warz). Keep NSNumbers alive forever so such bugs are harmless.
+- (id)retain {
+    this
+}
+- (())release {
+}
+
 - (id)initWithCoder:(id)coder {
     let class: Class = msg![env; coder class];
     let keyed_unarch_class: Class = msg_class![env; NSKeyedUnarchiver class];

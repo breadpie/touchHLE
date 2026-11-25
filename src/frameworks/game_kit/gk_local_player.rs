@@ -6,7 +6,7 @@
 //! `GKLocalPlayer`.
 
 use crate::dyld::{ConstantExports, HostConstant};
-use crate::objc::{id, nil, objc_classes, ClassExports};
+use crate::objc::{id, nil, objc_classes, ClassExports, NSZonePtr};
 
 pub const CLASSES: ClassExports = objc_classes! {
 
@@ -20,6 +20,68 @@ pub const CLASSES: ClassExports = objc_classes! {
     nil
 }
 
+@end
+
+// Stub: creating one returns nil, so every message sent to it is ignored.
+@implementation GKAchievement: NSObject
++ (id)allocWithZone:(NSZonePtr)_zone {
+    nil
+}
+@end
+
+// Stub: creating one returns nil, so every message sent to it is ignored.
+@implementation GKAchievementViewController: UIViewController
++ (id)allocWithZone:(NSZonePtr)_zone {
+    nil
+}
+@end
+
+// Stub: creating one returns nil, so every message sent to it is ignored.
+@implementation GKLeaderboardViewController: UIViewController
++ (id)allocWithZone:(NSZonePtr)_zone {
+    nil
+}
+@end
+
+// Stub: creating one returns nil, so every message sent to it is ignored.
+@implementation NSNumberFormatter: NSObject
++ (id)allocWithZone:(NSZonePtr)_zone {
+    nil
+}
+@end
+
+// Stub: creating one returns nil, so every message sent to it is ignored.
+@implementation UINavigationBar: UIView
++ (id)allocWithZone:(NSZonePtr)_zone {
+    nil
+}
+@end
+
+// Stub: creating one returns nil, so every message sent to it is ignored.
+@implementation UINavigationItem: NSObject
++ (id)allocWithZone:(NSZonePtr)_zone {
+    nil
+}
+@end
+
+// Stub: creating one returns nil, so every message sent to it is ignored.
+@implementation UIBarButtonItem: NSObject
++ (id)allocWithZone:(NSZonePtr)_zone {
+    nil
+}
+@end
+
+// Stub: creating one returns nil, so every message sent to it is ignored.
+@implementation UITabBarController: UIViewController
++ (id)allocWithZone:(NSZonePtr)_zone {
+    nil
+}
+@end
+
+@implementation NSAssertionHandler: NSObject
++ (id)currentHandler {
+    nil
+}
 @end
 
 };

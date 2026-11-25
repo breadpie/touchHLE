@@ -1013,6 +1013,74 @@ pub(super) fn objc_getClass(env: &mut Environment, name: ConstPtr<u8>) -> id {
         .unwrap_or_else(|| panic!("objc_getClass() for unimplemented class {name_str}"))
 }
 
+/// Our `Method` handles are small guest allocations holding the class that
+/// owns the implementation and the selector: `{ Class, SEL }`.
+pub(super) fn class_getInstanceMethod(env: &mut Environment, cls: Class, name: SEL) -> MutPtr<u32> {
+    let mut class = cls;
+    while class != nil {
+        let Some(host) = env.objc.get_host_object(class) else {
+            break;
+        };
+        let Some(host) = host.as_any().downcast_ref::<ClassHostObject>() else {
+            break;
+        };
+        if host.methods.contains_key(&name) {
+            let handle: MutPtr<Class> = env.mem.alloc(8).cast();
+            env.mem.write(handle, class);
+            env.mem.write(handle.cast::<SEL>() + 1, name);
+            return handle.cast();
+        }
+        class = host.superclass;
+    }
+    log!(
+        "class_getInstanceMethod: no method {} found, returning NULL",
+        name.as_str(&env.mem)
+    );
+    Ptr::null()
+}
+
+pub(super) fn method_exchangeImplementations(
+    env: &mut Environment,
+    m1: MutPtr<u32>,
+    m2: MutPtr<u32>,
+) {
+    if m1.is_null() || m2.is_null() {
+        return;
+    }
+    let read = |env: &mut Environment, m: MutPtr<u32>| -> (Class, SEL) {
+        let class: Class = env.mem.read(m.cast());
+        let sel: SEL = env.mem.read(m.cast::<SEL>() + 1);
+        (class, sel)
+    };
+    let (c1, s1) = read(env, m1);
+    let (c2, s2) = read(env, m2);
+    let imp1 = env
+        .objc
+        .borrow_mut::<ClassHostObject>(c1)
+        .methods
+        .remove(&s1)
+        .unwrap();
+    let imp2 = env
+        .objc
+        .borrow_mut::<ClassHostObject>(c2)
+        .methods
+        .remove(&s2)
+        .unwrap();
+    env.objc
+        .borrow_mut::<ClassHostObject>(c1)
+        .methods
+        .insert(s1, imp2);
+    env.objc
+        .borrow_mut::<ClassHostObject>(c2)
+        .methods
+        .insert(s2, imp1);
+    log!(
+        "method_exchangeImplementations: swapped {} and {}",
+        s1.as_str(&env.mem),
+        s2.as_str(&env.mem)
+    );
+}
+
 pub(super) fn class_getSuperclass(env: &mut Environment, cls: Class) -> Class {
     if cls == nil {
         nil

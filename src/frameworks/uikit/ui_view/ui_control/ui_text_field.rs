@@ -364,6 +364,8 @@ pub fn handle_text(env: &mut Environment, text_field: id, text: String) {
         () = msg![env; text_label setText:new_text];
         () = msg![env; text_field setNeedsDisplay];
         release(env, new_text);
+        // UIControlEventEditingChanged
+        super::send_actions(env, text_field, nil, 1 << 17);
     }
     release(env, txt);
 }
@@ -424,4 +426,6 @@ pub fn handle_return(env: &mut Environment, text_field: id) {
         log_dbg!("handle_return");
         () = msg![env; delegate textFieldShouldReturn:text_field];
     }
+    // UIControlEventEditingDidEndOnExit
+    super::send_actions(env, text_field, nil, 1 << 19);
 }

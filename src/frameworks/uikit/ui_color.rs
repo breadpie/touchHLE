@@ -79,6 +79,26 @@ pub const CLASSES: ClassExports = objc_classes! {
     autorelease(env, new)
 }
 
++ (id)colorWithHue:(CGFloat)h
+         saturation:(CGFloat)s
+         brightness:(CGFloat)v
+              alpha:(CGFloat)a {
+    // HSV to RGB
+    let h = (h.clamp(0.0, 1.0) * 6.0) % 6.0;
+    let c = v * s;
+    let x = c * (1.0 - ((h % 2.0) - 1.0).abs());
+    let (r, g, b) = match h as i32 {
+        0 => (c, x, 0.0),
+        1 => (x, c, 0.0),
+        2 => (0.0, c, x),
+        3 => (0.0, x, c),
+        4 => (x, 0.0, c),
+        _ => (c, 0.0, x),
+    };
+    let m = v - c;
+    msg![env; this colorWithRed:(r + m) green:(g + m) blue:(b + m) alpha:a]
+}
+
 + (id)colorWithWhite:(CGFloat)w alpha:(CGFloat)a {
     let new: id = msg![env; this alloc];
     let new: id = msg![env; new initWithWhite:w alpha:a];

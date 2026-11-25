@@ -128,6 +128,16 @@ pub const CLASSES: ClassExports = objc_classes! {
     run_run_loop(env, this, /* single_iteration: */ false, Some(time_limit));
 }
 
+- (bool)runMode:(id)_mode beforeDate:(id)date {
+    let time_limit: NSTimeInterval = msg![env; date timeIntervalSince1970];
+    run_run_loop(env, this, /* single_iteration: */ true, Some(time_limit));
+    true
+}
+
+- (id)currentMode {
+    ns_string::get_static_str(env, "kCFRunLoopDefaultMode")
+}
+
 // TODO: other run methods
 
 @end

@@ -226,6 +226,31 @@ pub const CLASSES: ClassExports = objc_classes! {
     }
 }
 
+- (id)displayNameForKey:(id)_key value:(id)value {
+    if value == nil {
+        return nil;
+    }
+    // TODO: real localized names. Common codes get English names; anything
+    // else returns the code itself, which is good enough for most games.
+    let value_str = ns_string::to_rust_string(env, value);
+    let name = match value_str.split(['_', '-']).next().unwrap_or("") {
+        "en" => "English",
+        "fr" => "French",
+        "de" => "German",
+        "es" => "Spanish",
+        "it" => "Italian",
+        "ja" => "Japanese",
+        "ko" => "Korean",
+        "zh" => "Chinese",
+        "pt" => "Portuguese",
+        "ru" => "Russian",
+        "nl" => "Dutch",
+        _ => return value,
+    };
+    let res = ns_string::from_rust_string(env, name.to_string());
+    autorelease(env, res)
+}
+
 @end
 
 };

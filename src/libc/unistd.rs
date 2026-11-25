@@ -114,7 +114,21 @@ fn access(env: &mut Environment, path: ConstPtr<u8>, mode: i32) -> i32 {
                 -1
             }
         }
-        _ => unimplemented!("{}", mode),
+        _ => {
+            // Combination of R_OK/W_OK/X_OK
+            if !exists {
+                set_errno(env, ENOENT);
+                return -1;
+            }
+            if (mode & R_OK != 0 && !read)
+                || (mode & W_OK != 0 && !write)
+                || (mode & X_OK != 0 && !execute)
+            {
+                set_errno(env, EACCES);
+                return -1;
+            }
+            0
+        }
     }
 }
 
