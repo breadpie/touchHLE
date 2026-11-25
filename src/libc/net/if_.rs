@@ -20,8 +20,9 @@ fn if_nameindex(_env: &mut Environment) -> ConstPtr<if_nameindex> {
 }
 
 fn if_nametoindex(_env: &mut Environment, _ifname: ConstPtr<u8>) -> u32 {
-    // Pretend no network interface exists. 0 means "not found".
-    0
+    // Pretend every interface (e.g. "en0") exists with index 1, so that
+    // MAC-address lookups via sysctl() can continue.
+    1
 }
 
 pub const FUNCTIONS: FunctionExports = &[
