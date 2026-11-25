@@ -189,8 +189,57 @@ fn sysctl(
                 newlen,
             )
         }
+        6 => {
+            let mib: Vec<i32> = (0..6).map(|i| env.mem.read(name + i)).collect();
+            // CTL_NET, PF_ROUTE, 0, AF_LINK, NET_RT_IFLIST, interface index.
+            // Old games use this to read the device's MAC address.
+            assert_eq!(&mib[..5], &[4, 17, 0, 18, 3]);
+            sysctl_fake_mac_address(env, oldp, oldlenp)
+        }
         _ => unimplemented!("sysctl() for name length {name_len} is unimplemented!"),
     }
+}
+
+/// Returns a fake `if_msghdr` followed by a `sockaddr_dl` for "en0" with
+/// a made-up MAC address.
+fn sysctl_fake_mac_address(
+    env: &mut Environment,
+    oldp: MutVoidPtr,
+    oldlenp: MutPtr<GuestUSize>,
+) -> i32 {
+    // sizeof(struct if_msghdr) on 32-bit iPhone OS
+    const IF_MSGHDR_SIZE: usize = 112;
+    const SOCKADDR_DL_SIZE: usize = 20;
+    const TOTAL: usize = IF_MSGHDR_SIZE + SOCKADDR_DL_SIZE;
+
+    let mut buf = [0u8; TOTAL];
+    buf[0..2].copy_from_slice(&(TOTAL as u16).to_le_bytes()); // ifm_msglen
+    buf[2] = 5; // ifm_version (RTM_VERSION)
+    buf[3] = 0xe; // ifm_type (RTM_IFINFO)
+    buf[12..14].copy_from_slice(&1u16.to_le_bytes()); // ifm_index
+    let sdl = &mut buf[IF_MSGHDR_SIZE..];
+    sdl[0] = SOCKADDR_DL_SIZE as u8; // sdl_len
+    sdl[1] = 18; // sdl_family (AF_LINK)
+    sdl[2..4].copy_from_slice(&1u16.to_le_bytes()); // sdl_index
+    sdl[4] = 6; // sdl_type (IFT_ETHER)
+    sdl[5] = 3; // sdl_nlen
+    sdl[6] = 6; // sdl_alen
+    sdl[7] = 0; // sdl_slen
+    sdl[8..11].copy_from_slice(b"en0");
+    sdl[11..17].copy_from_slice(&[0x02, 0x00, 0x00, 0x00, 0x00, 0x01]);
+
+    let len = TOTAL as GuestUSize;
+    if oldp.is_null() {
+        env.mem.write(oldlenp, len);
+        return 0;
+    }
+    if env.mem.read(oldlenp) < len {
+        log!("sysctl() for MAC address: buffer too small, returning -1");
+        return -1;
+    }
+    env.mem.bytes_at_mut(oldp.cast(), len).copy_from_slice(&buf);
+    env.mem.write(oldlenp, len);
+    0
 }
 
 fn sysctlbyname(
